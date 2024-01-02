@@ -1,7 +1,7 @@
 import gleam/string
 import gleam/io
 
-pub opaque type App
+pub opaque type App(model, msg, flags)
 
 pub type Key {
   Backspace
@@ -27,25 +27,29 @@ pub type Key {
   Unknown
 }
 
-pub type Event(a) {
+pub type Event(msg) {
   Frame(Int)
   KeyEvent(Key)
+  CustomEvent(msg)
 }
 
-pub type Command {
+pub opaque type Effect(msg)
+
+pub type Command(msg) {
   Noop
   HideCursor
   EnterAltScreen
-  Seq(List(Command))
+  Seq(List(Command(msg)))
   Quit
+  CustomCommand(Effect(msg))
 }
 
 @external(javascript, "./teashop.ffi.mjs", "setup")
 pub fn app(
-  init: fn(model) -> Command,
-  update: fn(model, Event(a)) -> #(model, Command),
+  init: fn(flags) -> #(model, Command(msg)),
+  update: fn(model, Event(msg)) -> #(model, Command(msg)),
   view: fn(model) -> String,
-) -> App
+) -> App(model, msg, flags)
 
 @external(javascript, "./teashop.ffi.mjs", "run")
-pub fn start(app: App, initial_model: model) -> App
+pub fn start(app: App(model, msg, flags), flags: flags) -> Nil

@@ -23,7 +23,7 @@ const initial_model = Model(
   )
 
 pub fn init(_) {
-  teashop.Noop
+  #(initial_model, teashop.Noop)
 }
 // pub fn init(_) { teashop.Seq([teashop.EnterAltScreen, teashop.HideCursor]) }
 
@@ -91,6 +91,6 @@ pub fn view(model: Model) {
 
 pub fn main() {
   let app = teashop.app(init, update, view)
-  teashop.start(app, initial_model)
+  teashop.start(app, Nil)
 }
 

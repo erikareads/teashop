@@ -29,7 +29,10 @@ import {
   Ctrl,
   Shift,
   Esc,
-  Unknown
+  Unknown,
+  CustomEvent,
+  CustomCommand
+
 } from "./teashop.mjs";
 import process from "node:process";
 
@@ -365,7 +368,7 @@ export class App extends EventEmitter {
     this.#view = view;
   }
 
-  run(initial_model) {
+  run(flags) {
     this.dispatch();
     const self = this;
     handleKeyboardInput(self);
@@ -374,18 +377,22 @@ export class App extends EventEmitter {
     renderer.run();
     this.#renderer = renderer;
 
-    let init_command = this.#init(initial_model);
+    let [model, init_command] = this.#init(flags);
     this.#handleCommand(init_command);
 
-    this.#model = initial_model;
+    this.#model = model;
 
-    let view = this.#view(initial_model);
+    let view = this.#view(model);
     this.#renderer.render(view);
 
     this.on("tick", (int) => {
       let frame = new Frame(int);
       this.#handleEvent(frame);
     });
+    this.on("effectDispatch", (msg) => {
+       let event = new CustomEvent(msg);
+       this.#handleEvent(event);
+    })
     this.on("keyPress", (key) => {
       const get_key_name = (key) => {
         if (globalThis.Deno) {
@@ -536,7 +543,16 @@ export class App extends EventEmitter {
           this.#handleCommand(cmd);
         }
         break;
+      case command instanceof CustomCommand:
+        let effect = command[0];
+        effect((msg) => this.effectDispatch(msg));
+        break
+        
     }
+  }
+
+  effectDispatch(msg) {
+    this.emit("effectDispatch", msg)
   }
 
   destroy() {
@@ -596,4 +612,4 @@ export class App extends EventEmitter {
 }
 
 export const setup = (init, update, view) => new App(init, update, view);
-export const run = (app, initial_model) => app.run(initial_model);
+export const run = (app, flags) => app.run(flags);
