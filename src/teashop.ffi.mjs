@@ -553,7 +553,7 @@ export class App extends EventEmitter {
         }
         break;
       case command instanceof CustomCommand:
-        let effect = command[0];
+        let effect = command[0][0];
         effect((msg) => this.effectDispatch(msg));
         break
         

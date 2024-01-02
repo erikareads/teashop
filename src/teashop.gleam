@@ -5,6 +5,16 @@ import teashop/event
 
 pub opaque type App(model, msg, flags)
 
+pub fn simple(
+  init: fn(flags) -> model,
+  update: fn(model, event.Event(msg)) -> model,
+  view: fn(model) -> String
+) {
+  let init = fn(flags) { #(init(flags), command.Noop) }
+  let update = fn(model, event) { #(update(model, event), command.Noop) }
+
+  app(init, update, view)
+}
 
 @external(javascript, "./teashop.ffi.mjs", "setup")
 pub fn app(

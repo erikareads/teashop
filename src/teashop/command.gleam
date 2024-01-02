@@ -1,4 +1,6 @@
-pub opaque type Effect(msg)
+pub opaque type Effect(msg) {
+  Effect(fn(fn(msg) -> Nil) -> Nil)
+}
 
 pub type Command(msg) {
   Noop
@@ -7,4 +9,8 @@ pub type Command(msg) {
   Seq(List(Command(msg)))
   Quit
   Custom(Effect(msg))
+}
+
+pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Command(msg) {
+  Custom(Effect(fn(dispatch) { effect(dispatch) }))
 }
