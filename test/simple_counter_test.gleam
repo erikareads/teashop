@@ -5,14 +5,14 @@ import teashop/command
 import gleam/string
 
 fn init(_) {
-  0
+  #(0, command.Noop)
 }
 
-fn update(model, event: event.Event(Nil)) {
+fn update(model, event) {
   case event {
-    event.Key(key.Up) -> model + 1
-    event.Key(key.Down) -> model - 1
-    _ -> model
+    event.Key(key.Up) -> #(model + 1, command.Noop)
+    event.Key(key.Down) -> #(model - 1, command.Noop)
+    _ -> #(model, command.Noop)
   }
 }
 
@@ -21,6 +21,6 @@ fn view(model) {
 }
 
 pub fn main() {
-  let app = teashop.simple(init, update, view)
+  let app = teashop.app(init, update, view)
   teashop.start(app, Nil)
 }
