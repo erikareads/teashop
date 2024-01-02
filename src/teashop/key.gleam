@@ -1,0 +1,23 @@
+pub type Key {
+  Backspace
+  Left
+  Right
+  Up
+  Down
+  Home
+  End
+  PageUp
+  PageDown
+  Tab
+  Delete
+  Insert
+  Enter
+  Space
+  FKey(Int)
+  Char(String)
+  Alt(Key)
+  Ctrl(Key)
+  Shift(Key)
+  Esc
+  Unknown
+}

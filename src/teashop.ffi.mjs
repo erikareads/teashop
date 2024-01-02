@@ -3,12 +3,22 @@
 
 import {
   Frame,
-  KeyEvent,
+  Key as KeyEvent,
+  Custom as CustomEvent,
+
+} from "./teashop/event.mjs";
+
+import {
+  Quit,
   Noop,
   HideCursor,
   EnterAltScreen,
   Seq,
-  Quit,
+  Custom as CustomCommand
+} from "./teashop/command.mjs"
+
+
+import {
   Backspace,
   Left,
   Right,
@@ -30,11 +40,125 @@ import {
   Shift,
   Esc,
   Unknown,
-  CustomEvent,
-  CustomCommand
+} from "./teashop/key.mjs"
 
-} from "./teashop.mjs";
 import process from "node:process";
+
+      const get_key_name = (key) => {
+        if (globalThis.Deno) {
+          return key.key
+        } else {
+          return key.name
+        }
+      }
+
+      const parse_key_type = (key) => {
+        let name = get_key_name(key)
+        switch(name) {
+          case "backspace":
+      return new Backspace;
+       break
+          case "left":
+            return new Left;
+            break
+          case "right":
+            return new Right;
+            break
+          case "up":
+            return new Up;
+            break
+          case "down":
+            return new Down;
+            break
+          case "home":
+            return new Home;
+            break
+          case "end":
+            return new End;
+            break
+          case "pageup":
+            return new PageUp;
+            break
+          case "pagedown":
+            return new PageDown;
+            break
+          case "f1":
+            return new FKey(1);
+            break
+          case "f2":
+            return new FKey(2);
+            break
+          case "f3":
+            return new FKey(3);
+            break
+          case "f4":
+            return new FKey(4);
+            break
+          case "f5":
+            return new FKey(5);
+            break
+          case "f6":
+            return new FKey(6);
+            break
+          case "f7":
+            return new FKey(7);
+            break
+          case "f8":
+            return new FKey(8);
+            break
+          case "f9":
+            return new FKey(9);
+            break
+          case "f10":
+            return new FKey(10);
+            break
+          case "f11":
+            return new FKey(11);
+            break
+          case "f12":
+            return new FKey(12);
+            break
+          case "tab":
+            return new Tab;
+            break
+          case "delete":
+            return new Delete;
+            break
+          case "insert":
+            return new Insert;
+            break
+          case "escape":
+            return new Esc;
+            break
+          case "return":
+            return new Enter;
+            break
+          case "space":
+            return new Space;
+            break
+          default:
+            return new Char(name)
+            break
+
+        }
+        }
+
+      const handle_modifier = (key, parsed_key) => {
+        if (key.meta) {
+          return new Alt(parsed_key)
+        } else if (key.ctrl) {
+          return new Ctrl(parsed_key)
+        } else if (key.shift) {
+          if (parsed_key instanceof Char) {
+            return parsed_key
+          } else {
+            return new Shift(parsed_key)
+          }
+        } else {
+          return parsed_key
+        }
+
+      }
 
 /** Custom implementation of event emitter */
 class EventEmitter {
@@ -394,121 +518,6 @@ export class App extends EventEmitter {
        this.#handleEvent(event);
     })
     this.on("keyPress", (key) => {
-      const get_key_name = (key) => {
-        if (globalThis.Deno) {
-          return key.key
-        } else {
-          return key.name
-        }
-      }
-
-      const parse_key_type = (key) => {
-        let name = get_key_name(key)
-        switch(name) {
-          case "backspace":
-      return new Backspace;
-       break
-          case "left":
-            return new Left;
-            break
-          case "right":
-            return new Right;
-            break
-          case "up":
-            return new Up;
-            break
-          case "down":
-            return new Down;
-            break
-          case "home":
-            return new Home;
-            break
-          case "end":
-            return new End;
-            break
-          case "pageup":
-            return new PageUp;
-            break
-          case "pagedown":
-            return new PageDown;
-            break
-          case "f1":
-            return new FKey(1);
-            break
-          case "f2":
-            return new FKey(2);
-            break
-          case "f3":
-            return new FKey(3);
-            break
-          case "f4":
-            return new FKey(4);
-            break
-          case "f5":
-            return new FKey(5);
-            break
-          case "f6":
-            return new FKey(6);
-            break
-          case "f7":
-            return new FKey(7);
-            break
-          case "f8":
-            return new FKey(8);
-            break
-          case "f9":
-            return new FKey(9);
-            break
-          case "f10":
-            return new FKey(10);
-            break
-          case "f11":
-            return new FKey(11);
-            break
-          case "f12":
-            return new FKey(12);
-            break
-          case "tab":
-            return new Tab;
-            break
-          case "delete":
-            return new Delete;
-            break
-          case "insert":
-            return new Insert;
-            break
-          case "escape":
-            return new Esc;
-            break
-          case "return":
-            return new Enter;
-            break
-          case "space":
-            return new Space;
-            break
-          default:
-            return new Char(name)
-            break
-
-        }
-        }
-
-      const handle_modifier = (key, parsed_key) => {
-        if (key.meta) {
-          return new Alt(parsed_key)
-        } else if (key.ctrl) {
-          return new Ctrl(parsed_key)
-        } else if (key.shift) {
-          if (parsed_key instanceof Char) {
-            return parsed_key
-          } else {
-            return new Shift(parsed_key)
-          }
-        } else {
-          return parsed_key
-        }
-
-      }
 
       let parsed_key = parse_key_type(key)
       let modifier_key = handle_modifier(key, parsed_key)

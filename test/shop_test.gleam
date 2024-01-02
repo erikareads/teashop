@@ -1,4 +1,7 @@
 import teashop
+import teashop/event
+import teashop/key
+import teashop/command
 import gleam/string
 import gleam/io
 import gleam/option.{None}
@@ -23,31 +26,31 @@ const initial_model = Model(
   )
 
 pub fn init(_) {
-  #(initial_model, teashop.Noop)
+  #(initial_model, command.Noop)
 }
 // pub fn init(_) { teashop.Seq([teashop.EnterAltScreen, teashop.HideCursor]) }
 
 pub fn update(model: Model, event) {
   case event {
-      teashop.KeyEvent(teashop.Char("q")) | teashop.KeyEvent(teashop.Esc) ->
-        #(model, teashop.Quit)
-      teashop.KeyEvent(teashop.Char("k")) | teashop.KeyEvent(teashop.Up) -> {
+      event.Key(key.Char("q")) | event.Key(key.Esc) ->
+        #(model, command.Quit)
+      event.Key(key.Char("k")) | event.Key(key.Up) -> {
         let choices_len = list.length(model.choices)
         let cursor = case model.cursor == 0 {
           True -> choices_len - 1
           False -> model.cursor - 1
         }
-        #(Model(..model, cursor: cursor), teashop.Noop)
+        #(Model(..model, cursor: cursor), command.Noop)
       }
-      teashop.KeyEvent(teashop.Char("j")) | teashop.KeyEvent(teashop.Down) -> {
+      event.Key(key.Char("j")) | event.Key(key.Down) -> {
         let choices_len = list.length(model.choices)
         let cursor = case model.cursor == {choices_len - 1} {
           True -> 0
           False -> model.cursor + 1
         }
-        #(Model(..model, cursor: cursor), teashop.Noop)
+        #(Model(..model, cursor: cursor), command.Noop)
       }
-      teashop.KeyEvent(teashop.Enter) | teashop.KeyEvent(teashop.Space) -> {
+      event.Key(key.Enter) | event.Key(key.Space) -> {
         let toggle = fn(status) {
           case status {
             Selected -> Unselected
@@ -62,9 +65,9 @@ pub fn update(model: Model, event) {
           }
           #(name, status)
         })
-        #(Model(..model, choices: choices), teashop.Noop)
+        #(Model(..model, choices: choices), command.Noop)
       }
-      _otherwise -> #(model, teashop.Noop)
+      _otherwise -> #(model, command.Noop)
   }
 }
 
