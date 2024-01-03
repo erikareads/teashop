@@ -5,7 +5,7 @@ import {
   Frame,
   Key as KeyEvent,
   Custom as CustomEvent,
-
+  Resize,
 } from "./teashop/event.mjs";
 
 import {
@@ -14,9 +14,8 @@ import {
   HideCursor,
   EnterAltScreen,
   Seq,
-  Custom as CustomCommand
-} from "./teashop/command.mjs"
-
+  Custom as CustomCommand,
+} from "./teashop/command.mjs";
 
 import {
   Backspace,
@@ -40,125 +39,123 @@ import {
   Shift,
   Esc,
   Unknown,
-} from "./teashop/key.mjs"
+} from "./teashop/key.mjs";
 
 import process from "node:process";
 
-      const get_key_name = (key) => {
-        if (globalThis.Deno) {
-          return key.key
-        } else {
-          return key.name
-        }
-      }
+const get_key_name = (key) => {
+  if (globalThis.Deno) {
+    return key.key;
+  } else {
+    return key.name;
+  }
+};
 
-      const parse_key_type = (key) => {
-        let name = get_key_name(key)
-        switch(name) {
-          case "backspace":
-      return new Backspace;
-       break
-          case "left":
-            return new Left;
-            break
-          case "right":
-            return new Right;
-            break
-          case "up":
-            return new Up;
-            break
-          case "down":
-            return new Down;
-            break
-          case "home":
-            return new Home;
-            break
-          case "end":
-            return new End;
-            break
-          case "pageup":
-            return new PageUp;
-            break
-          case "pagedown":
-            return new PageDown;
-            break
-          case "f1":
-            return new FKey(1);
-            break
-          case "f2":
-            return new FKey(2);
-            break
-          case "f3":
-            return new FKey(3);
-            break
-          case "f4":
-            return new FKey(4);
-            break
-          case "f5":
-            return new FKey(5);
-            break
-          case "f6":
-            return new FKey(6);
-            break
-          case "f7":
-            return new FKey(7);
-            break
-          case "f8":
-            return new FKey(8);
-            break
-          case "f9":
-            return new FKey(9);
-            break
-          case "f10":
-            return new FKey(10);
-            break
-          case "f11":
-            return new FKey(11);
-            break
-          case "f12":
-            return new FKey(12);
-            break
-          case "tab":
-            return new Tab;
-            break
-          case "delete":
-            return new Delete;
-            break
-          case "insert":
-            return new Insert;
-            break
-          case "escape":
-            return new Esc;
-            break
-          case "return":
-            return new Enter;
-            break
-          case "space":
-            return new Space;
-            break
-          default:
-            return new Char(name)
-            break
+const parse_key_type = (key) => {
+  let name = get_key_name(key);
+  switch (name) {
+    case "backspace":
+      return new Backspace();
+      break;
+    case "left":
+      return new Left();
+      break;
+    case "right":
+      return new Right();
+      break;
+    case "up":
+      return new Up();
+      break;
+    case "down":
+      return new Down();
+      break;
+    case "home":
+      return new Home();
+      break;
+    case "end":
+      return new End();
+      break;
+    case "pageup":
+      return new PageUp();
+      break;
+    case "pagedown":
+      return new PageDown();
+      break;
+    case "f1":
+      return new FKey(1);
+      break;
+    case "f2":
+      return new FKey(2);
+      break;
+    case "f3":
+      return new FKey(3);
+      break;
+    case "f4":
+      return new FKey(4);
+      break;
+    case "f5":
+      return new FKey(5);
+      break;
+    case "f6":
+      return new FKey(6);
+      break;
+    case "f7":
+      return new FKey(7);
+      break;
+    case "f8":
+      return new FKey(8);
+      break;
+    case "f9":
+      return new FKey(9);
+      break;
+    case "f10":
+      return new FKey(10);
+      break;
+    case "f11":
+      return new FKey(11);
+      break;
+    case "f12":
+      return new FKey(12);
+      break;
+    case "tab":
+      return new Tab();
+      break;
+    case "delete":
+      return new Delete();
+      break;
+    case "insert":
+      return new Insert();
+      break;
+    case "escape":
+      return new Esc();
+      break;
+    case "return":
+      return new Enter();
+      break;
+    case "space":
+      return new Space();
+      break;
+    default:
+      return new Char(name);
+      break;
+  }
+};
 
-        }
-        }
-
-      const handle_modifier = (key, parsed_key) => {
-        if (key.meta) {
-          return new Alt(parsed_key)
-        } else if (key.ctrl) {
-          return new Ctrl(parsed_key)
-        } else if (key.shift) {
-          if (parsed_key instanceof Char) {
-            return parsed_key
-          } else {
-            return new Shift(parsed_key)
-          }
-        } else {
-          return parsed_key
-        }
-
-      }
+const handle_modifier = (key, parsed_key) => {
+  if (key.meta) {
+    return new Alt(parsed_key);
+  } else if (key.ctrl) {
+    return new Ctrl(parsed_key);
+  } else if (key.shift) {
+    if (parsed_key instanceof Char) {
+      return parsed_key;
+    } else {
+      return new Shift(parsed_key);
+    }
+  } else {
+    return parsed_key;
+  }
+};
 
 /** Custom implementation of event emitter */
 class EventEmitter {
@@ -217,23 +214,21 @@ const handleKeyboardInput = (tui) => {
       mod.handleInput(tui);
     });
   } else {
-    import("./keypress.mjs").then(
-      (mod) => {
-        mod.keypress(process.stdin);
+    import("./keypress.mjs").then((mod) => {
+      mod.keypress(process.stdin);
 
-        // listen for the "keypress" event
-        process.stdin.on("keypress", function (ch, key) {
-          // console.log('got "keypress"', key);
-          tui.emit("keyPress", key);
-          if (key && key.ctrl && key.name == "c") {
-            tui.emit("destroy");
-          }
-        });
+      // listen for the "keypress" event
+      process.stdin.on("keypress", function (ch, key) {
+        // console.log('got "keypress"', key);
+        tui.emit("keyPress", key);
+        if (key && key.ctrl && key.name == "c") {
+          tui.emit("destroy");
+        }
+      });
 
-        process.stdin.setRawMode(true);
-        process.stdin.resume();
-      },
-    );
+      process.stdin.setRawMode(true);
+      process.stdin.resume();
+    });
   }
 };
 
@@ -264,8 +259,8 @@ const escape = (code) => {
 };
 
 const escape_seq = (code) => {
- return  "\x1b[" + code
-}
+  return "\x1b[" + code;
+};
 
 const enter_alt_screen = () => {
   escape("?1049h");
@@ -284,12 +279,12 @@ const cursor_up = (x) => {
 };
 
 const cursor_up_seq = (x) => {
- return  escape_seq(`${x}` + "A");
+  return escape_seq(`${x}` + "A");
 };
 
 const clear_line_seq = () => {
-  return escape_seq("2K")
-}
+  return escape_seq("2K");
+};
 
 const move_cursor = (x, y) => {
   escape(`${x};${y}H`);
@@ -358,14 +353,14 @@ class Renderer extends EventEmitter {
   #flush() {
     let new_lines = this.#lines();
     let new_lines_this_flush = new_lines.length;
-    let clear_sequence = new Array;
+    let clear_sequence = new Array();
 
     if (this.#lines_rendered > 0) {
-      for(let i = 0; i < this.#lines_rendered; i++){
-      clear_sequence.push(cursor_up_seq(1))
-      clear_sequence.push(clear_line_seq())
-      // cursor_up(1);
-      // clear_line();
+      for (let i = 0; i < this.#lines_rendered; i++) {
+        clear_sequence.push(cursor_up_seq(1));
+        clear_sequence.push(clear_line_seq());
+        // cursor_up(1);
+        // clear_line();
       }
     }
 
@@ -496,6 +491,7 @@ export class App extends EventEmitter {
     this.dispatch();
     const self = this;
     handleKeyboardInput(self);
+    this.#listenForResize();
 
     const renderer = new Renderer(20, self);
     renderer.run();
@@ -514,16 +510,24 @@ export class App extends EventEmitter {
       this.#handleEvent(frame);
     });
     this.on("effectDispatch", (msg) => {
-       let event = new CustomEvent(msg);
-       this.#handleEvent(event);
-    })
+      let event = new CustomEvent(msg);
+      this.#handleEvent(event);
+    });
+    this.on("terminalResize", (size) => {
+      this.#handleEvent(new Resize(size.width, size.height));
+    });
     this.on("keyPress", (key) => {
-
-      let parsed_key = parse_key_type(key)
-      let modifier_key = handle_modifier(key, parsed_key)
+      let parsed_key = parse_key_type(key);
+      let modifier_key = handle_modifier(key, parsed_key);
 
       this.#handleEvent(new KeyEvent(modifier_key));
     });
+    if (globalThis.Deno) {
+      let size = Deno.consoleSize();
+      this.#emitResizeEvent(size.columns, size.rows);
+    } else {
+      this.#emitResizeEvent(process.stdout.columns, process.stdout.rows);
+    }
   }
   #handleEvent(event) {
     let [model, command] = this.#update(this.#model, event);
@@ -555,13 +559,12 @@ export class App extends EventEmitter {
       case command instanceof CustomCommand:
         let effect = command[0][0];
         effect((msg) => this.effectDispatch(msg));
-        break
-        
+        break;
     }
   }
 
   effectDispatch(msg) {
-    this.emit("effectDispatch", msg)
+    this.emit("effectDispatch", msg);
   }
 
   destroy() {
@@ -581,6 +584,38 @@ export class App extends EventEmitter {
       process.stdin.setRawMode(false);
       process.stdin.pause();
     }
+  }
+
+  #emitResizeEvent(width, height) {
+      this.emit("terminalResize", { width: width, height: height });
+  }
+
+  #listenForResize() {
+
+    if (globalThis.Deno) {
+      if (Deno.build.os === "windows") {
+        setInterval(() => {
+          let size = Deno.consoleSize();
+          this.#emitResizeEvent(size.columns, size.rows);
+        }, 20);
+      } else {
+        Deno.addSignalListener("SIGWINCH", () => {
+          let size = Deno.consoleSize();
+          this.#emitResizeEvent(size.columns, size.rows);
+        });
+      }
+    } else {
+      if (process.platform == "win32") {
+        setInterval(() => {
+          this.#emitResizeEvent(process.stdout.columns, process.stdout.rows);
+        }, 20);
+      } else {
+        process.on("SIGWINCH", () => {
+          this.#emitResizeEvent(process.stdout.columns, process.stdout.rows);
+        });
+      }
+    }
+
   }
 
   dispatch() {
