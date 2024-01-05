@@ -1,5 +1,3 @@
-// EventEmitter implementation modified from `deno_tui`:
-// Copyright 2023 Im-Beast. MIT license.
 
 import {
   Frame,
@@ -12,7 +10,9 @@ import {
   Quit,
   Noop,
   HideCursor,
+  ShowCursor,
   EnterAltScreen,
+  ExitAltScreen,
   Seq,
   Custom as CustomCommand,
 } from "./teashop/command.mjs";
@@ -156,6 +156,9 @@ const handle_modifier = (key, parsed_key) => {
     return parsed_key;
   }
 };
+
+// EventEmitter implementation modified from `deno_tui`:
+// Copyright 2023 Im-Beast. MIT license.
 
 /** Custom implementation of event emitter */
 class EventEmitter {
@@ -505,6 +508,10 @@ export class App extends EventEmitter {
     let view = this.#view(model);
     this.#renderer.render(view);
 
+    this.on("custom_messages", (msg) => {
+      let event = new CustomEvent(msg);
+      this.#handleEvent(event);
+    })
     this.on("tick", (int) => {
       let frame = new Frame(int);
       this.#handleEvent(frame);
@@ -528,6 +535,8 @@ export class App extends EventEmitter {
     } else {
       this.#emitResizeEvent(process.stdout.columns, process.stdout.rows);
     }
+
+    return this
   }
   #handleEvent(event) {
     let [model, command] = this.#update(this.#model, event);
@@ -547,8 +556,14 @@ export class App extends EventEmitter {
       case command instanceof HideCursor:
         this.#renderer.hide_cursor();
         break;
+      case command instanceof ShowCursor:
+        this.#renderer.show_cursor();
+        break;
       case command instanceof EnterAltScreen:
         this.#renderer.enter_alt_screen();
+        break;
+      case command instanceof ExitAltScreen:
+        this.#renderer.exit_alt_screen();
         break;
       case command instanceof Seq:
         let cmds = command[0];
@@ -565,6 +580,10 @@ export class App extends EventEmitter {
 
   effectDispatch(msg) {
     this.emit("effectDispatch", msg);
+  }
+
+  send(msg) {
+    this.emit("custom_messages", msg)
   }
 
   destroy() {
@@ -657,3 +676,4 @@ export class App extends EventEmitter {
 
 export const setup = (init, update, view) => new App(init, update, view);
 export const run = (app, flags) => app.run(flags);
+export const send = (app, msg) => app.send(msg);

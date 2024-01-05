@@ -4,10 +4,12 @@ pub opaque type Effect(msg) {
 
 pub type Command(msg) {
   Noop
+  Quit
   HideCursor
+  ShowCursor
+  ExitAltScreen
   EnterAltScreen
   Seq(List(Command(msg)))
-  Quit
   Custom(Effect(msg))
 }
 
