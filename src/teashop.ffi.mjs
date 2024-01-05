@@ -1,6 +1,6 @@
 
 import {
-  Frame,
+  // Frame,
   Key as KeyEvent,
   Custom as CustomEvent,
   Resize,
@@ -350,7 +350,7 @@ class Renderer extends EventEmitter {
     };
 
     updateStep();
-    this.#runner.emit("tick", now);
+    // this.#runner.emit("tick", now);
   }
 
   #flush() {
@@ -512,10 +512,10 @@ export class App extends EventEmitter {
       let event = new CustomEvent(msg);
       this.#handleEvent(event);
     })
-    this.on("tick", (int) => {
-      let frame = new Frame(int);
-      this.#handleEvent(frame);
-    });
+    // this.on("tick", (int) => {
+    //   let frame = new Frame(int);
+    //   this.#handleEvent(frame);
+    // });
     this.on("effectDispatch", (msg) => {
       let event = new CustomEvent(msg);
       this.#handleEvent(event);
