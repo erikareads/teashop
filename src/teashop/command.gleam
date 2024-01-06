@@ -10,6 +10,7 @@ pub type Command(msg) {
   ExitAltScreen
   EnterAltScreen
   Seq(List(Command(msg)))
+  SetTimer(msg, Int)
   Custom(Effect(msg))
 }
 

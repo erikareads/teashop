@@ -1,4 +1,3 @@
-
 import {
   // Frame,
   Key as KeyEvent,
@@ -14,6 +13,7 @@ import {
   EnterAltScreen,
   ExitAltScreen,
   Seq,
+  SetTimer,
   Custom as CustomCommand,
 } from "./teashop/command.mjs";
 
@@ -511,7 +511,7 @@ export class App extends EventEmitter {
     this.on("custom_messages", (msg) => {
       let event = new CustomEvent(msg);
       this.#handleEvent(event);
-    })
+    });
     // this.on("tick", (int) => {
     //   let frame = new Frame(int);
     //   this.#handleEvent(frame);
@@ -529,6 +529,10 @@ export class App extends EventEmitter {
 
       this.#handleEvent(new KeyEvent(modifier_key));
     });
+    this.on("timers", (msg) => {
+      let event = new CustomEvent(msg);
+      this.#handleEvent(event);
+    });
     if (globalThis.Deno) {
       let size = Deno.consoleSize();
       this.#emitResizeEvent(size.columns, size.rows);
@@ -536,7 +540,7 @@ export class App extends EventEmitter {
       this.#emitResizeEvent(process.stdout.columns, process.stdout.rows);
     }
 
-    return this
+    return this;
   }
   #handleEvent(event) {
     let [model, command] = this.#update(this.#model, event);
@@ -546,12 +550,23 @@ export class App extends EventEmitter {
     this.#model = model;
   }
 
+  #setTimer(msg, duration) {
+    setTimeout(() => {
+      this.emit("timers", msg);
+    }, duration);
+  }
+
   #handleCommand(command) {
     switch (true) {
       case command instanceof Quit:
         this.emit("destroy");
         break;
       case command instanceof Noop:
+        break;
+      case command instanceof SetTimer:
+        let msg = command[0];
+        let duration = command[1];
+        this.#setTimer(msg, duration);
         break;
       case command instanceof HideCursor:
         this.#renderer.hide_cursor();
@@ -583,7 +598,7 @@ export class App extends EventEmitter {
   }
 
   send(msg) {
-    this.emit("custom_messages", msg)
+    this.emit("custom_messages", msg);
   }
 
   destroy() {
@@ -606,11 +621,10 @@ export class App extends EventEmitter {
   }
 
   #emitResizeEvent(width, height) {
-      this.emit("terminalResize", { width: width, height: height });
+    this.emit("terminalResize", { width: width, height: height });
   }
 
   #listenForResize() {
-
     if (globalThis.Deno) {
       if (Deno.build.os === "windows") {
         setInterval(() => {
@@ -634,7 +648,6 @@ export class App extends EventEmitter {
         });
       }
     }
-
   }
 
   dispatch() {
