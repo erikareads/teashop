@@ -1,5 +1,9 @@
 // Copyright 2023 Im-Beast. MIT license.
-import type { MouseEvent, MousePressEvent, MouseScrollEvent } from "../types.ts";
+import type {
+  MouseEvent,
+  MousePressEvent,
+  MouseScrollEvent,
+} from "../types.ts";
 
 let mouseEvent: MouseEvent = {
   key: "mouse",
@@ -85,7 +89,9 @@ export function decodeMouseSGR(
   mouseEvent = previous;
 
   // Clear data from previous events
-  const allMouseEvents = mouseEvent as Partial<MousePressEvent & MouseScrollEvent>;
+  const allMouseEvents = mouseEvent as Partial<
+    MousePressEvent & MouseScrollEvent
+  >;
   delete allMouseEvents.scroll;
   delete allMouseEvents.drag;
   delete allMouseEvents.button;
@@ -150,7 +156,12 @@ export function decodeMouseVT_UTF8(
   const shift = !!(modifiers & 4);
   const meta = !!(modifiers & 8);
   const ctrl = !!(modifiers & 16);
-  const scroll = button && !!(modifiers & 32) && !!(modifiers & 64) ? (modifiers & 3 ? 1 : -1) : 0;
+  const scroll =
+    button && !!(modifiers & 32) && !!(modifiers & 64)
+      ? modifiers & 3
+        ? 1
+        : -1
+      : 0;
   if (scroll) button = undefined;
   const drag = !scroll && !!(modifiers & 64);
 
@@ -159,7 +170,9 @@ export function decodeMouseVT_UTF8(
   mouseEvent = previous;
 
   // Clear data from previous events
-  const allMouseEvents = mouseEvent as Partial<MousePressEvent & MouseScrollEvent>;
+  const allMouseEvents = mouseEvent as Partial<
+    MousePressEvent & MouseScrollEvent
+  >;
   delete allMouseEvents.scroll;
   delete allMouseEvents.drag;
   delete allMouseEvents.button;

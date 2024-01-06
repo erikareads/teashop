@@ -78,7 +78,10 @@ export function decodeKey(buffer: Uint8Array, code: string): KeyPressEvent {
             break;
         }
 
-        code = code.replace(`1;${modifier}`, "").replace(`;${modifier}`, "").replace("1;", "");
+        code = code
+          .replace(`1;${modifier}`, "")
+          .replace(`;${modifier}`, "")
+          .replace("1;", "");
         switch (code) {
           case "OP":
           case "[P":

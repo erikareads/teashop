@@ -4,7 +4,10 @@
 export type EventListener<
   Events extends EventRecord,
   Type extends keyof Events = keyof Events,
-> = (this: EventEmitter<Events>, ...args: Events[Type]["args"]) => void | Promise<void>;
+> = (
+  this: EventEmitter<Events>,
+  ...args: Events[Type]["args"]
+) => void | Promise<void>;
 
 /**
  * Type for creating new arguments
@@ -26,7 +29,11 @@ export class EventEmitter<EventMap extends EventRecord> {
    * Add new listener for specified event type
    * If `once` is set to true it will run just once and then be removed from listeners list
    */
-  on<Type extends keyof EventMap>(type: Type, listener: EventListener<EventMap, Type>, once?: boolean): () => void {
+  on<Type extends keyof EventMap>(
+    type: Type,
+    listener: EventListener<EventMap, Type>,
+    once?: boolean,
+  ): () => void {
     let listeners = this.listeners[type];
     if (!listeners) {
       listeners = [];
@@ -54,8 +61,14 @@ export class EventEmitter<EventMap extends EventRecord> {
    */
   off(): void;
   off<Type extends keyof EventMap>(type: Type): void;
-  off<Type extends keyof EventMap>(type: Type, listener: EventListener<EventMap, Type>): void;
-  off<Type extends keyof EventMap>(type?: Type, listener?: EventListener<EventMap, Type>): void {
+  off<Type extends keyof EventMap>(
+    type: Type,
+    listener: EventListener<EventMap, Type>,
+  ): void;
+  off<Type extends keyof EventMap>(
+    type?: Type,
+    listener?: EventListener<EventMap, Type>,
+  ): void {
     if (!type) {
       this.listeners = {};
       return;
@@ -72,7 +85,10 @@ export class EventEmitter<EventMap extends EventRecord> {
   }
 
   /** Emit specific type, after emitting all listeners associated with that event type will run with given arguments */
-  emit<Type extends keyof EventMap>(type: Type, ...args: EventMap[Type]["args"]): void {
+  emit<Type extends keyof EventMap>(
+    type: Type,
+    ...args: EventMap[Type]["args"]
+  ): void {
     const listeners = this.listeners[type];
     if (!listeners?.length) return;
 
