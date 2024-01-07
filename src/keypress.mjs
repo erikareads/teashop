@@ -229,13 +229,13 @@ function emitKey(stream, s) {
     // ctrl+letter
     key.name = String.fromCharCode(s.charCodeAt(0) + "a".charCodeAt(0) - 1);
     key.ctrl = true;
-  } else if (s.length === 1 && s >= "a" && s <= "z") {
-    // lowercase letter
-    key.name = s;
   } else if (s.length === 1 && s >= "A" && s <= "Z") {
     // shift+letter
-    key.name = s.toLowerCase();
+    key.name = s;
     key.shift = true;
+  } else if (s.length === 1) {
+    // lowercase letter
+    key.name = s;
   } else if ((parts = metaKeyCodeRe.exec(s))) {
     // meta+character key
     key.name = parts[1].toLowerCase();

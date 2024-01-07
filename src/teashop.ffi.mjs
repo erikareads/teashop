@@ -44,6 +44,7 @@ import {
 import process from "node:process";
 
 const get_key_name = (key) => {
+  return key.key;
   if (globalThis.Deno) {
     return key.key;
   } else {
@@ -132,6 +133,9 @@ const parse_key_type = (key) => {
     case "return":
       return new Enter();
       break;
+    case "enter":
+      return new Enter();
+      break;
     case "space":
       return new Space();
       break;
@@ -209,31 +213,90 @@ class EventEmitter {
     }
   }
 }
-const handleKeyboardInput = (tui) => {
-  if (globalThis.Deno) {
-    import("./input.ts").then((mod) => {
-      tui.stdin = Deno.stdin;
+// const handleKeyboardInput = (tui) => {
+//   if (globalThis.Deno) {
+//     import("./input.ts").then((mod) => {
+//       tui.stdin = Deno.stdin;
 
-      mod.handleInput(tui);
-    });
+//       mod.handleInput(tui);
+//     });
+//   } else {
+//     import("./keypress.mjs").then((mod) => {
+//       mod.keypress(process.stdin);
+
+//       // listen for the "keypress" event
+//       process.stdin.on("keypress", function (ch, key) {
+//         // console.log('got "keypress"', key);
+
+//         tui.emit("keyPress", key);
+//         if (key && key.ctrl && key.name == "c") {
+//           tui.emit("destroy");
+//         }
+//       });
+
+//       process.stdin.setRawMode(true);
+//       process.stdin.resume();
+//     });
+//   }
+// };
+
+import { decodeKey } from "./input_reader_decoders_keyboard.mjs";
+import { StringDecoder } from "node:string_decoder";
+
+let decoder = new StringDecoder("utf8");
+
+export function* decodeBuffer(buffer) {
+  const code = decoder.write(buffer);
+  const lastIndex = code.lastIndexOf("\x1b");
+
+  if (code.indexOf("\x1b") !== lastIndex) {
+    yield* decodeBuffer(buffer.subarray(0, lastIndex));
+    yield* decodeBuffer(buffer.subarray(lastIndex));
   } else {
-    import("./keypress.mjs").then((mod) => {
-      mod.keypress(process.stdin);
+    // yield decodeMouseVT_UTF8(buffer, code) ??
+    // decodeMouseSGR(buffer, code) ??
+    yield decodeKey(buffer, code);
+  }
+}
 
-      // listen for the "keypress" event
-      process.stdin.on("keypress", function (ch, key) {
-        // console.log('got "keypress"', key);
-        tui.emit("keyPress", key);
-        if (key && key.ctrl && key.name == "c") {
-          tui.emit("destroy");
-        }
-      });
+const handleBuffer = (tui, buffer) => {
+  for (const event of decodeBuffer(buffer)) {
+    // if (event.key === "mouse") {
+    //   emitter.emit("mouseEvent", event);
 
-      process.stdin.setRawMode(true);
-      process.stdin.resume();
-    });
+    //   if ("button" in event) {
+    //     emitter.emit("mousePress", event);
+    //   } else if ("scroll" in event) {
+    //     emitter.emit("mouseScroll", event);
+    //   }
+    // } else {
+    tui.emit("keyPress", event);
+    // console.log(event);
+    if (event && event.ctrl && event.key == "c") {
+      tui.emit("destroy");
+    }
+    // }
   }
 };
+
+async function handleKeyboardInput(tui) {
+  // const async handleKeyboardInput = (tui) => {
+  if (globalThis.Deno) {
+    Deno.stdin.setRaw(true);
+    for await (const chunk of Deno.stdin.readable) {
+      handleBuffer(tui, chunk);
+    }
+  } else {
+    let onData = (b) => {
+      let buffer = new Uint8Array(b.buffer);
+      handleBuffer(tui, buffer);
+    };
+
+    process.stdin.on("data", onData);
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+  }
+}
 
 export function print(string) {
   if (typeof process === "object") {
@@ -544,7 +607,7 @@ export class App extends EventEmitter {
   }
   #handleEvent(event) {
     let [model, command] = this.#update(this.#model, event);
-    let updated_view = this.#view(this.#model);
+    let updated_view = this.#view(model);
     this.#handleCommand(command);
     this.#renderer.render(updated_view);
     this.#model = model;
