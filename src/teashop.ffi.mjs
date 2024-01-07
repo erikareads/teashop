@@ -603,7 +603,7 @@ export class App extends EventEmitter {
       this.#emitResizeEvent(process.stdout.columns, process.stdout.rows);
     }
 
-    return this;
+    return (msg) => this.send(msg);
   }
   #handleEvent(event) {
     let [model, command] = this.#update(this.#model, event);
