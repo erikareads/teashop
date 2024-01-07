@@ -616,7 +616,7 @@ export class App extends EventEmitter {
   #setTimer(msg, duration) {
     setTimeout(() => {
       this.emit("timers", msg);
-    }, duration);
+    }, duration.milliseconds);
   }
 
   #handleCommand(command) {

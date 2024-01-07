@@ -1,3 +1,5 @@
+import teashop/duration
+
 pub opaque type Effect(msg) {
   Effect(fn(fn(msg) -> Nil) -> Nil)
 }
@@ -10,7 +12,7 @@ pub type Command(msg) {
   ExitAltScreen
   EnterAltScreen
   Seq(List(Command(msg)))
-  SetTimer(msg, Int)
+  SetTimer(msg, duration.Duration)
   Custom(Effect(msg))
 }
 
