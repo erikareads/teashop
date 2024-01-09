@@ -12,10 +12,10 @@ pub opaque type Options {
 }
 
 pub fn default_options() {
-  Options(refresh_delay: Some(duration.milliseconds(20)), selector: None)
+  Options(refresh_delay: Some(duration.milliseconds(20)))
 }
 
-pub fn with_refresh_delay(options: Options(a), refresh_delay: duration.Duration) {
+pub fn with_refresh_delay(options: Options, refresh_delay: duration.Duration) {
   Options(..options, refresh_delay: Some(refresh_delay))
 }
 

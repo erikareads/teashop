@@ -15,7 +15,7 @@ import {
   Seq,
   SetTimer,
   Custom as CustomCommand,
-} from "./teashop/command.mjs";
+} from "./teashop/internal/internal_command.mjs";
 
 import {
   Backspace,
@@ -621,36 +621,36 @@ export class App extends EventEmitter {
 
   #handleCommand(command) {
     switch (true) {
-      case command instanceof Quit:
+      case command[0] instanceof Quit:
         this.emit("destroy");
         break;
-      case command instanceof Noop:
+      case command[0] instanceof Noop:
         break;
-      case command instanceof SetTimer:
+      case command[0] instanceof SetTimer:
         let msg = command[0];
         let duration = command[1];
         this.#setTimer(msg, duration);
         break;
-      case command instanceof HideCursor:
+      case command[0] instanceof HideCursor:
         this.#renderer.hide_cursor();
         break;
-      case command instanceof ShowCursor:
+      case command[0] instanceof ShowCursor:
         this.#renderer.show_cursor();
         break;
-      case command instanceof EnterAltScreen:
+      case command[0] instanceof EnterAltScreen:
         this.#renderer.enter_alt_screen();
         break;
-      case command instanceof ExitAltScreen:
+      case command[0] instanceof ExitAltScreen:
         this.#renderer.exit_alt_screen();
         break;
-      case command instanceof Seq:
+      case command[0] instanceof Seq:
         let cmds = command[0];
         for (const cmd of cmds) {
           this.#handleCommand(cmd);
         }
         break;
-      case command instanceof CustomCommand:
-        let effect = command[0][0];
+      case command[0] instanceof CustomCommand:
+        let effect = command[0];
         effect((msg) => this.effectDispatch(msg));
         break;
     }

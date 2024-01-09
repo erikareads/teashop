@@ -1,21 +1,19 @@
 import teashop/duration
+import teashop/internal/internal_command.{type Command as InternalCommand}
 
-pub opaque type Effect(msg) {
-  Effect(fn(fn(msg) -> Nil) -> Nil)
-}
 
-pub type Command(msg) {
-  Noop
-  Quit
-  HideCursor
-  ShowCursor
-  ExitAltScreen
-  EnterAltScreen
-  Seq(List(Command(msg)))
-  SetTimer(msg, duration.Duration)
-  Custom(Effect(msg))
+pub opaque type Command(msg) {
+  Command(InternalCommand(msg))
 }
 
 pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Command(msg) {
-  Custom(Effect(fn(dispatch) { effect(dispatch) }))
+  Command(internal_command.Custom(fn(dispatch) { effect(dispatch) }))
+}
+
+pub fn noop() {
+  Command(internal_command.Noop)
+}
+
+pub fn quit() {
+  Command(internal_command.Quit)
 }
