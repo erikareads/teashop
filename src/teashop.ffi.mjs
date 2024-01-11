@@ -6,6 +6,11 @@ import {
 } from "./teashop/event.mjs";
 
 import {
+  AltScreenEnabled,
+  AltScreenDisabled,
+} from "./teashop/internal/renderer_options.mjs"
+
+import {
   Quit,
   Noop,
   HideCursor,
@@ -15,7 +20,7 @@ import {
   Seq,
   SetTimer,
   Custom as CustomCommand,
-} from "./teashop/internal/internal_command.mjs";
+} from "./teashop/command.mjs";
 
 import {
   Backspace,
@@ -545,6 +550,7 @@ export class App extends EventEmitter {
   #view;
   #model;
   #renderer;
+  #refreshDelay;
 
   constructor(init, update, view) {
     super();
@@ -553,15 +559,22 @@ export class App extends EventEmitter {
     this.#view = view;
   }
 
-  run(flags) {
+  run(flags, options) {
+    this.#refreshDelay = options.refresh_delay;
     this.dispatch();
     const self = this;
     handleKeyboardInput(self);
     this.#listenForResize();
 
-    const renderer = new Renderer(20, self);
+    const renderer = new Renderer(this.#refreshDelay, self);
     renderer.run();
     this.#renderer = renderer;
+
+    this.#renderer.hide_cursor();
+
+    if (options.alt_screen instanceof AltScreenEnabled) {
+      this.#renderer.enter_alt_screen()
+    }
 
     let [model, init_command] = this.#init(flags);
     this.#handleCommand(init_command);
@@ -650,7 +663,7 @@ export class App extends EventEmitter {
         }
         break;
       case command[0] instanceof CustomCommand:
-        let effect = command[0];
+        let effect = command[0][0];
         effect((msg) => this.effectDispatch(msg));
         break;
     }
@@ -693,7 +706,7 @@ export class App extends EventEmitter {
         setInterval(() => {
           let size = Deno.consoleSize();
           this.#emitResizeEvent(size.columns, size.rows);
-        }, 20);
+        }, this.#refreshDelay);
       } else {
         Deno.addSignalListener("SIGWINCH", () => {
           let size = Deno.consoleSize();
@@ -704,7 +717,7 @@ export class App extends EventEmitter {
       if (process.platform == "win32") {
         setInterval(() => {
           this.#emitResizeEvent(process.stdout.columns, process.stdout.rows);
-        }, 20);
+        }, this.#refreshDelay);
       } else {
         process.on("SIGWINCH", () => {
           this.#emitResizeEvent(process.stdout.columns, process.stdout.rows);
@@ -751,5 +764,5 @@ export class App extends EventEmitter {
 }
 
 export const setup = (init, update, view) => new App(init, update, view);
-export const run = (app, flags) => app.run(flags);
+export const run = (app, flags, options) => app.run(flags, options);
 export const send = (app, msg) => app.send(msg);

@@ -99,5 +99,7 @@ pub fn view(model: Model) {
 
 pub fn main() {
   let app = teashop.app(init, update, view)
-  teashop.start(app, Nil)
+  let options = teashop.default_options()
+     |> teashop.with_alt_screen()
+  teashop.start(app, Nil, options)
 }
