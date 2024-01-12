@@ -11,6 +11,7 @@ pub type InternalCommand(msg) {
   SetWindowTitle(String)
   Seq(List(Command(msg)))
   SetTimer(msg, duration.Duration)
+  ExecuteProcess(String, List(String))
   Custom(fn(fn(msg) -> Nil) -> Nil)
 }
 
@@ -60,4 +61,8 @@ pub fn set_window_title(title: String) -> Command(msg) {
 
 pub fn clear_screen() {
   Command(ClearScreen)
+}
+
+pub fn execute_process(program, args) {
+  Command(ExecuteProcess(program, args))
 }

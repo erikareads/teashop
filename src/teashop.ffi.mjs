@@ -1,10 +1,12 @@
+import * as child_process from "node:child_process";
 import {
+
   Shutdown,
   Send,
   WindowTitle,
   ReleaseTerminal,
   RestoreTerminal,
-} from "./teashop/internal/action.mjs"
+} from "./teashop/internal/action.mjs";
 
 import {
   // Frame,
@@ -16,7 +18,7 @@ import {
 import {
   AltScreenEnabled,
   AltScreenDisabled,
-} from "./teashop/internal/renderer_options.mjs"
+} from "./teashop/internal/renderer_options.mjs";
 
 import {
   Quit,
@@ -28,6 +30,7 @@ import {
   ClearScreen,
   SetWindowTitle,
   Seq,
+  ExecuteProcess,
   SetTimer,
   Custom as CustomCommand,
 } from "./teashop/command.mjs";
@@ -274,6 +277,12 @@ export function* decodeBuffer(buffer) {
   }
 }
 
+const denoReader = (() => {
+  if (globalThis.Deno) {
+    return Deno.stdin.readable.getReader();
+  }
+})();
+
 const handleBuffer = (tui, buffer) => {
   for (const event of decodeBuffer(buffer)) {
     // if (event.key === "mouse") {
@@ -294,22 +303,64 @@ const handleBuffer = (tui, buffer) => {
   }
 };
 
+function handleKeyInputDeno(tui) {
+  const listener = new DenoListener();
+  listener.tui = tui;
+  listener.run();
+  return listener;
+}
+
+class DenoListener extends EventEmitter {
+  // make into enum?
+  state = "reading";
+  tui;
+
+  onCancel() {
+    // make into enum?
+    this.state = "cancel";
+    this.off("cancel", this.onCancel);
+  }
+
+  run() {
+    this.on("cancel", this.onCancel);
+    this.start();
+  }
+  async start() {
+    let buffer = new Uint8Array(0);
+    while (true) {
+      if (buffer.length === 0) {
+        const readResult = await denoReader.read();
+        buffer = readResult.value;
+      }
+      handleBuffer(this.tui, buffer);
+      // console.log(buffer);
+      // this.tui.emit("key", buffer[0]);
+      if (this.state == "cancel") {
+        break;
+      }
+      buffer = new Uint8Array(0);
+    }
+  }
+}
+
+function handleKeyInputNode(tui) {
+  let onData = (b) => {
+    let buffer = new Uint8Array(b.buffer);
+    handleBuffer(tui, buffer);
+  };
+
+  process.stdin.on("data", onData);
+  process.stdin.resume();
+}
+
 async function handleKeyboardInput(tui) {
   // const async handleKeyboardInput = (tui) => {
   if (globalThis.Deno) {
     Deno.stdin.setRaw(true);
     for await (const chunk of Deno.stdin.readable) {
-      handleBuffer(tui, chunk);
     }
   } else {
-    let onData = (b) => {
-      let buffer = new Uint8Array(b.buffer);
-      handleBuffer(tui, buffer);
-    };
-
-    process.stdin.on("data", onData);
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
+    handleKeyInputNode(tui);
   }
 }
 
@@ -388,8 +439,8 @@ const erase_display_seq = (x) => {
 };
 
 const set_window_title_seq = (title) => {
-  print("\x1b]2;" + title + "\x07")
-}
+  print("\x1b]2;" + title + "\x07");
+};
 
 const clear = () => {
   erase_display_seq(2);
@@ -401,7 +452,7 @@ class Renderer extends EventEmitter {
   #width = "";
   #height = "";
   #last_render = "";
-  #altscreen_state = AltScreenState.Inactive;
+  altscreen_state = AltScreenState.Inactive;
   #lines_rendered = 0;
   #cursor_visibility = CursorVisibility.Visible;
   #refresh_delay;
@@ -451,7 +502,7 @@ class Renderer extends EventEmitter {
 
     let tmp = new_lines.join("\r\n");
     print(clear_sequence.join("") + tmp + "\r\n");
-    if (this.#altscreen_state == AltScreenState.Active) {
+    if (this.altscreen_state == AltScreenState.Active) {
       move_cursor(new_lines_this_flush, 0);
     } else {
       cursor_back(this.#width);
@@ -473,21 +524,35 @@ class Renderer extends EventEmitter {
     }
   }
 
-  #handleEnterAltScreen() {
-    if (this.#altscreen_state == AltScreenState.Inactive) {
+  internalHideCursor() {
+    hide_cursor();
+    this.#cursor_visibility = CursorVisibility.Hidden;
+  }
+
+  internalShowCursor() {
+    show_cursor();
+    this.#cursor_visibility = CursorVisibility.Visible;
+  }
+
+  handleEnterAltScreen() {
+    if (this.altscreen_state == AltScreenState.Inactive) {
       enter_alt_screen();
       clear();
-      this.#altscreen_state = AltScreenState.Active;
+      this.altscreen_state = AltScreenState.Active;
       this.#last_render = "";
     }
   }
 
-  #handleExitAltScreen() {
-    if (this.#altscreen_state == AltScreenState.Active) {
+  handleExitAltScreen() {
+    if (this.altscreen_state == AltScreenState.Active) {
       exit_alt_screen();
-      this.#altscreen_state = AltScreenState.Inactive;
+      this.altscreen_state = AltScreenState.Inactive;
       this.#last_render = "";
     }
+  }
+
+  repaint() {
+      this.#last_render = "";
   }
 
   #restore() {
@@ -529,8 +594,8 @@ class Renderer extends EventEmitter {
       this.#handleSetCursorVisibility(cursor_visibility);
     });
     this.on("shutdown", () => this.#shutdown());
-    this.on("enter_alt_screen", () => this.#handleEnterAltScreen());
-    this.on("exit_alt_screen", () => this.#handleExitAltScreen());
+    this.on("enter_alt_screen", () => this.handleEnterAltScreen());
+    this.on("exit_alt_screen", () => this.handleExitAltScreen());
     this.#tick();
   }
 
@@ -566,15 +631,91 @@ export class App extends EventEmitter {
   #renderer;
   #refreshDelay = 20;
   #initAltScreen = new AltScreenDisabled();
+  #denoListener;
+  #pausedAltScreenState;
+
+  initializeTerminal() {
+    if (globalThis.Deno) {
+      Deno.stdin.setRaw(true);
+    } else {
+      process.stdin.setRawMode(true);
+    }
+    this.#renderer.internalHideCursor();
+  }
+
+  createKeyboardListener() {
+    if (globalThis.Deno) {
+      this.#denoListener = handleKeyInputDeno(this);
+    } else handleKeyInputNode(this);
+  }
+
+  #pauseKeyboardInput() {
+    // console.log("paused");
+    if (globalThis.Deno) {
+      this.#denoListener.emit("cancel");
+      this.#denoListener = null;
+    } else {
+      process.stdin.pause();
+    }
+  }
+
+  #resumeKeyboardInput() {
+    // console.log("resumed");
+    if (globalThis.Deno) {
+      this.createKeyboardListener();
+    } else {
+      process.stdin.resume();
+    }
+  }
+
+  releaseTerminal() {
+    this.#pauseKeyboardInput();
+    this.#renderer.shutdown();
+    this.#pausedAltScreenState = this.#renderer.altscreen_state;
+    this.restoreTerminalState();
+  }
+
+  restoreTerminal() {
+    this.initializeTerminal();
+    this.#resumeKeyboardInput();
+    if (this.#pausedAltScreenState == AltScreenState.Active) {
+      this.#renderer.handleEnterAltScreen();
+    } else {
+      this.#renderer.repaint()
+    }
+    this.#renderer.run();
+    // resize
+    if (globalThis.Deno) {
+      let size = Deno.consoleSize();
+      this.#emitResizeEvent(size.columns, size.rows);
+    } else {
+      this.#emitResizeEvent(process.stdout.columns, process.stdout.rows);
+    }
+  }
+
+  restoreTerminalState() {
+    this.#renderer.internalShowCursor();
+    this.#renderer.handleExitAltScreen();
+
+    if (globalThis.Deno) {
+      try {
+        Deno.stdin.setRaw(false);
+      } catch {
+        /**/
+      }
+    } else {
+      process.stdin.setRawMode(false);
+    }
+  }
 
   setRefreshDelay(value) {
     this.#refreshDelay = value;
-    return this
+    return this;
   }
 
   setAltScreen() {
     this.#initAltScreen = new AltScreenEnabled();
-    return this
+    return this;
   }
 
   constructor(init, update, view) {
@@ -588,17 +729,17 @@ export class App extends EventEmitter {
     // this.#refreshDelay = options.refresh_delay;
     this.dispatch();
     const self = this;
-    handleKeyboardInput(self);
+    // handleKeyboardInput(self);
     this.#listenForResize();
 
     const renderer = new Renderer(this.#refreshDelay, self);
     renderer.run();
     this.#renderer = renderer;
-
-    this.#renderer.hide_cursor();
+    this.initializeTerminal();
+    this.createKeyboardListener();
 
     if (this.#initAltScreen instanceof AltScreenEnabled) {
-      this.#renderer.enter_alt_screen()
+      this.#renderer.enter_alt_screen();
     }
 
     let [model, init_command] = this.#init(flags);
@@ -645,18 +786,18 @@ export class App extends EventEmitter {
   }
 
   handleAction(action) {
-    switch(true) {
+    switch (true) {
       case action[0] instanceof Shutdown:
         this.emit("destroy");
-        break
+        break;
       case action[0] instanceof Send:
         let msg = action[0][0];
-        this.send(msg)
-        break
+        this.send(msg);
+        break;
       case action[0] instanceof WindowTitle:
         let title = action[0][0];
-        set_window_title_seq(title)
-        break
+        set_window_title_seq(title);
+        break;
     }
   }
   #handleEvent(event) {
@@ -676,12 +817,23 @@ export class App extends EventEmitter {
   #handleCommand(command) {
     switch (true) {
       case command[0] instanceof Quit:
+        // this.releaseTerminal();
+        // clear();
+        // let self = this;
+        // setTimeout(() => self.restoreTerminal(), 1000);
         this.emit("destroy");
         break;
       case command[0] instanceof Noop:
         break;
+      case command[0] instanceof ExecuteProcess:
+        let program = command[0][0];
+        let args = command[0][1].toArray();
+        this.releaseTerminal()
+        child_process.spawnSync(program, args, {stdio: "inherit"})
+        this.restoreTerminal()
+        break
       case command[0] instanceof ClearScreen:
-        clear()
+        clear();
         break;
       case command[0] instanceof SetTimer:
         let msg = command[0];
@@ -702,7 +854,7 @@ export class App extends EventEmitter {
         break;
       case command[0] instanceof SetWindowTitle:
         let title = command[0][0];
-        set_window_title_seq(title)
+        set_window_title_seq(title);
         break;
       case command[0] instanceof Seq:
         let cmds = command[0];
@@ -813,5 +965,6 @@ export class App extends EventEmitter {
 
 export const setup = (init, update, view) => new App(init, update, view);
 export const run = (app, flags) => app.run(flags);
-export const set_refresh_delay = (app, refresh_delay) => app.setRefreshDelay(refresh_delay)
-export const set_alt_screen = (app) => app.setAltScreen()
+export const set_refresh_delay = (app, refresh_delay) =>
+  app.setRefreshDelay(refresh_delay);
+export const set_alt_screen = (app) => app.setAltScreen();
