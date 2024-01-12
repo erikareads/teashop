@@ -7,6 +7,8 @@ pub type InternalCommand(msg) {
   ShowCursor
   ExitAltScreen
   EnterAltScreen
+  ClearScreen
+  SetWindowTitle(String)
   Seq(List(Command(msg)))
   SetTimer(msg, duration.Duration)
   Custom(fn(fn(msg) -> Nil) -> Nil)
@@ -35,6 +37,7 @@ pub fn hide_cursor() {
 pub fn show_cursor() {
   Command(ShowCursor)
 }
+
 pub fn enter_alt_screen() {
   Command(EnterAltScreen)
 }
@@ -49,4 +52,12 @@ pub fn set_timer(msg: msg, duration: duration.Duration) -> Command(msg) {
 
 pub fn sequence(list: List(Command(msg))) -> Command(msg) {
   Command(Seq(list))
+}
+
+pub fn set_window_title(title: String) -> Command(msg) {
+  Command(SetWindowTitle(title))
+}
+
+pub fn clear_screen() {
+  Command(ClearScreen)
 }

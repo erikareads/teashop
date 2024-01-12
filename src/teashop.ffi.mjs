@@ -1,4 +1,12 @@
 import {
+  Shutdown,
+  Send,
+  WindowTitle,
+  ReleaseTerminal,
+  RestoreTerminal,
+} from "./teashop/internal/action.mjs"
+
+import {
   // Frame,
   Key as KeyEvent,
   Custom as CustomEvent,
@@ -17,6 +25,8 @@ import {
   ShowCursor,
   EnterAltScreen,
   ExitAltScreen,
+  ClearScreen,
+  SetWindowTitle,
   Seq,
   SetTimer,
   Custom as CustomCommand,
@@ -377,6 +387,10 @@ const erase_display_seq = (x) => {
   escape(`${x}J`);
 };
 
+const set_window_title_seq = (title) => {
+  print("\x1b]2;" + title + "\x07")
+}
+
 const clear = () => {
   erase_display_seq(2);
   move_cursor(1, 1);
@@ -550,7 +564,18 @@ export class App extends EventEmitter {
   #view;
   #model;
   #renderer;
-  #refreshDelay;
+  #refreshDelay = 20;
+  #initAltScreen = new AltScreenDisabled();
+
+  setRefreshDelay(value) {
+    this.#refreshDelay = value;
+    return this
+  }
+
+  setAltScreen() {
+    this.#initAltScreen = new AltScreenEnabled();
+    return this
+  }
 
   constructor(init, update, view) {
     super();
@@ -559,8 +584,8 @@ export class App extends EventEmitter {
     this.#view = view;
   }
 
-  run(flags, options) {
-    this.#refreshDelay = options.refresh_delay;
+  run(flags) {
+    // this.#refreshDelay = options.refresh_delay;
     this.dispatch();
     const self = this;
     handleKeyboardInput(self);
@@ -572,7 +597,7 @@ export class App extends EventEmitter {
 
     this.#renderer.hide_cursor();
 
-    if (options.alt_screen instanceof AltScreenEnabled) {
+    if (this.#initAltScreen instanceof AltScreenEnabled) {
       this.#renderer.enter_alt_screen()
     }
 
@@ -616,7 +641,23 @@ export class App extends EventEmitter {
       this.#emitResizeEvent(process.stdout.columns, process.stdout.rows);
     }
 
-    return (msg) => this.send(msg);
+    return (action) => this.handleAction(action);
+  }
+
+  handleAction(action) {
+    switch(true) {
+      case action[0] instanceof Shutdown:
+        this.emit("destroy");
+        break
+      case action[0] instanceof Send:
+        let msg = action[0][0];
+        this.send(msg)
+        break
+      case action[0] instanceof WindowTitle:
+        let title = action[0][0];
+        set_window_title_seq(title)
+        break
+    }
   }
   #handleEvent(event) {
     let [model, command] = this.#update(this.#model, event);
@@ -639,6 +680,9 @@ export class App extends EventEmitter {
         break;
       case command[0] instanceof Noop:
         break;
+      case command[0] instanceof ClearScreen:
+        clear()
+        break;
       case command[0] instanceof SetTimer:
         let msg = command[0];
         let duration = command[1];
@@ -655,6 +699,10 @@ export class App extends EventEmitter {
         break;
       case command[0] instanceof ExitAltScreen:
         this.#renderer.exit_alt_screen();
+        break;
+      case command[0] instanceof SetWindowTitle:
+        let title = command[0][0];
+        set_window_title_seq(title)
         break;
       case command[0] instanceof Seq:
         let cmds = command[0];
@@ -764,5 +812,6 @@ export class App extends EventEmitter {
 }
 
 export const setup = (init, update, view) => new App(init, update, view);
-export const run = (app, flags, options) => app.run(flags, options);
-export const send = (app, msg) => app.send(msg);
+export const run = (app, flags) => app.run(flags);
+export const set_refresh_delay = (app, refresh_delay) => app.setRefreshDelay(refresh_delay)
+export const set_alt_screen = (app) => app.setAltScreen()

@@ -4,29 +4,16 @@ import teashop/command
 import teashop/event
 import teashop/duration
 import teashop/internal/renderer_options
+import teashop/internal/action
 import gleam/option.{type Option, None, Some}
 
 pub opaque type App(model, msg, flags)
 
-// type AltScreenState {
-//   AltScreenEnabled
-//   AltScreenDisabled
-// }
+pub type Dispatch(msg) =
+  fn(Action(msg)) -> Nil
 
-pub opaque type Options {
-  Options(refresh_delay: duration.Duration, alt_screen: renderer_options.AltScreenState)
-}
-
-pub fn default_options() {
-  Options(refresh_delay: duration.milliseconds(20), alt_screen: renderer_options.AltScreenDisabled)
-}
-
-pub fn with_refresh_delay(options: Options, refresh_delay: duration.Duration) {
-  Options(..options, refresh_delay: refresh_delay)
-}
-
-pub fn with_alt_screen(options: Options) {
-  Options(..options, alt_screen: renderer_options.AltScreenEnabled)
+pub opaque type Action(msg) {
+  Action(action.InternalAction(msg))
 }
 
 @external(javascript, "./teashop.ffi.mjs", "setup")
@@ -40,8 +27,19 @@ pub fn app(
 pub fn start(
   app: App(model, msg, flags),
   flags: flags,
-  options: Options
-) -> fn(msg) -> Nil
+) -> fn(Action(msg)) -> Nil
+
+// options: Options
 
 // pub fn start_with_options(app: App(model, msg, flags), flags: flags, options: Options(msg)) -> StartedApp
+pub fn send(dispatch: Dispatch(msg), msg: msg) {
+  dispatch(Action(action.Send(msg)))
+}
 
+pub fn quit(dispatch: Dispatch(msg)) {
+  dispatch(Action(action.Shutdown))
+}
+
+pub fn set_window_title(dispatch: Dispatch(msg), title: String) {
+  dispatch(Action(action.WindowTitle(title)))
+}
