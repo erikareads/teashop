@@ -168,4 +168,4 @@ gleam run -m shop_tutorial --target js
 
 ## Acknowledgments
 
-Teashop is based on [The Elm Architecture] by Evan Czaplicki et alia. It is heavily inspired by [Bubble Tea](https://github.com/charmbracelet/bubbletea) and [Mint Tea](https://github.com/leostera/minttea/). Teashop builds on work from [deno_tui](https://github.com/Im-Beast/deno_tui) and borrows heavily from [Lustre](https://lustre.build/).
+Teashop is based on [The Elm Architecture](https://guide.elm-lang.org/architecture/) by Evan Czaplicki et alia. It is heavily inspired by [Bubble Tea](https://github.com/charmbracelet/bubbletea) and [Mint Tea](https://github.com/leostera/minttea/). Teashop builds on work from [deno_tui](https://github.com/Im-Beast/deno_tui) and borrows heavily from [Lustre](https://lustre.build/).
