@@ -1,10 +1,8 @@
 import teashop
 import teashop/event
-import teashop/key
 import teashop/command
+import teashop/key
 import gleam/string
-import gleam/io
-import gleam/option.{None}
 import gleam/list
 
 pub type Status {
@@ -26,14 +24,13 @@ const initial_model = Model(
 )
 
 pub fn init(_) {
-  #(initial_model, command.noop())
+  #(initial_model, command.set_window_title("teashop"))
 }
-
-// pub fn init(_) { teashop.Seq([teashop.EnterAltScreen, teashop.HideCursor]) }
 
 pub fn update(model: Model, event) {
   case event {
     event.Key(key.Char("q")) | event.Key(key.Esc) -> #(model, command.quit())
+
     event.Key(key.Char("k")) | event.Key(key.Up) -> {
       let choices_len = list.length(model.choices)
       let cursor = case model.cursor == 0 {
@@ -42,6 +39,7 @@ pub fn update(model: Model, event) {
       }
       #(Model(..model, cursor: cursor), command.noop())
     }
+
     event.Key(key.Char("j")) | event.Key(key.Down) -> {
       let choices_len = list.length(model.choices)
       let cursor = case model.cursor == { choices_len - 1 } {
@@ -50,6 +48,7 @@ pub fn update(model: Model, event) {
       }
       #(Model(..model, cursor: cursor), command.noop())
     }
+
     event.Key(key.Enter) | event.Key(key.Space) -> {
       let toggle = fn(status) {
         case status {
@@ -94,12 +93,9 @@ pub fn view(model: Model) {
 
   [header, options, footer]
   |> string.join("\n\n")
-
 }
 
 pub fn main() {
   let app = teashop.app(init, update, view)
-  let options = teashop.default_options()
-     |> teashop.with_alt_screen()
-  teashop.start(app, Nil, options)
+  teashop.start(app, Nil)
 }
