@@ -1,11 +1,6 @@
-import gleam/string
-import gleam/io
 import teashop/command
 import teashop/event
-import teashop/duration
-import teashop/internal/renderer_options
 import teashop/internal/action
-import gleam/option.{type Option, None, Some}
 
 pub opaque type App(model, msg, flags)
 
