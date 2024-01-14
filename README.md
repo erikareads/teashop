@@ -15,10 +15,12 @@ We'll start with creating a new Gleam project:
 gleam new shop_tutorial
 ```
 
-Then we add `teashop` to our project:
+<!-- Update this when git dependencies or hex release -->
+Then we add `teashop` to our project by adding it as a path dependency in our `gleam.toml`:
 
-```
-gleam add teashop
+```toml
+[dependencies]
+teashop = { path = "../teashop" }
 ```
 
 Now we can open up `src/shop_tutorial.gleam` and import the modules we'll need:
@@ -156,3 +158,8 @@ pub fn main() {
 }
 ```
 
+### Running our teashop:
+
+```
+gleam run -m shop_tutorial --target js
+```
