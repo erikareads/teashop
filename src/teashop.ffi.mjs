@@ -493,10 +493,8 @@ class Renderer extends EventEmitter {
 
     if (this.#lines_rendered > 0) {
       for (let i = 0; i < this.#lines_rendered; i++) {
-        clear_sequence.push(cursor_up_seq(1));
         clear_sequence.push(clear_line_seq());
-        // cursor_up(1);
-        // clear_line();
+        clear_sequence.push(cursor_up_seq(1));
       }
     }
 
@@ -633,6 +631,29 @@ export class App extends EventEmitter {
   #initAltScreen = new AltScreenDisabled();
   #denoListener;
   #pausedAltScreenState;
+  #queue = [];
+  #commands = [];
+
+  #handleNewEvent(event) {
+    this.#queue.push(event)
+    this.#flush()
+  }
+
+  #flush() {
+    if (this.#queue.length) {
+      while (this.#queue.length) {
+        this.#handleEvent(this.#queue.shift())
+      }
+    }
+
+    while (this.#commands.length) {
+      this.#handleCommand(this.#commands.shift())
+    }
+
+    if (this.#queue.length) {
+      this.#flush()
+    }
+  }
 
   initializeTerminal() {
     if (globalThis.Deno) {
@@ -752,28 +773,28 @@ export class App extends EventEmitter {
 
     this.on("custom_messages", (msg) => {
       let event = new CustomEvent(msg);
-      this.#handleEvent(event);
+      this.#handleNewEvent(event);
     });
     // this.on("tick", (int) => {
     //   let frame = new Frame(int);
-    //   this.#handleEvent(frame);
+    //   this.#handleNewEvent(frame);
     // });
     this.on("effectDispatch", (msg) => {
       let event = new CustomEvent(msg);
-      this.#handleEvent(event);
+      this.#handleNewEvent(event);
     });
     this.on("terminalResize", (size) => {
-      this.#handleEvent(new Resize(size.width, size.height));
+      this.#handleNewEvent(new Resize(size.width, size.height));
     });
     this.on("keyPress", (key) => {
       let parsed_key = parse_key_type(key);
       let modifier_key = handle_modifier(key, parsed_key);
 
-      this.#handleEvent(new KeyEvent(modifier_key));
+      this.#handleNewEvent(new KeyEvent(modifier_key));
     });
     this.on("timers", (msg) => {
       let event = new CustomEvent(msg);
-      this.#handleEvent(event);
+      this.#handleNewEvent(event);
     });
     if (globalThis.Deno) {
       let size = Deno.consoleSize();
@@ -803,9 +824,13 @@ export class App extends EventEmitter {
   #handleEvent(event) {
     let [model, command] = this.#update(this.#model, event);
     let updated_view = this.#view(model);
-    this.#handleCommand(command);
+    this.#handleNewCommand(command);
     this.#renderer.render(updated_view);
     this.#model = model;
+  }
+
+  #handleNewCommand(command) {
+    this.#commands.push(command)
   }
 
   #setTimer(msg, duration) {
@@ -817,10 +842,6 @@ export class App extends EventEmitter {
   #handleCommand(command) {
     switch (true) {
       case command[0] instanceof Quit:
-        // this.releaseTerminal();
-        // clear();
-        // let self = this;
-        // setTimeout(() => self.restoreTerminal(), 1000);
         this.emit("destroy");
         break;
       case command[0] instanceof Noop:
@@ -836,8 +857,8 @@ export class App extends EventEmitter {
         clear();
         break;
       case command[0] instanceof SetTimer:
-        let msg = command[0];
-        let duration = command[1];
+        let msg = command[0][0];
+        let duration = command[0][1];
         this.#setTimer(msg, duration);
         break;
       case command[0] instanceof HideCursor:
@@ -857,9 +878,9 @@ export class App extends EventEmitter {
         set_window_title_seq(title);
         break;
       case command[0] instanceof Seq:
-        let cmds = command[0];
+        let cmds = command[0][0];
         for (const cmd of cmds) {
-          this.#handleCommand(cmd);
+          this.#handleNewCommand(cmd);
         }
         break;
       case command[0] instanceof CustomCommand:
