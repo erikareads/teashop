@@ -3,6 +3,8 @@
 [![Package Version](https://img.shields.io/hexpm/v/teashop)](https://hex.pm/packages/teashop)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/teashop/)
 
+Teashop is a terminal application framework for Gleam based on [The Elm Architecture](https://guide.elm-lang.org/architecture/) heavily inspired by [Bubble Tea](https://github.com/charmbracelet/bubbletea) and [Mint Tea](https://github.com/leostera/minttea/). Teashop currently supports the Javascript target for Gleam.
+
 ## Tutorial
 
 ### Getting Started
