@@ -426,6 +426,10 @@ const cursor_back = (x) => {
   escape(`${x}D`);
 };
 
+const cursor_back_seq = (x) => {
+  return escape_seq(`${x}` + "D");
+}
+
 const show_cursor = () => {
   escape("?25h");
 };
@@ -447,10 +451,15 @@ const clear = () => {
   move_cursor(1, 1);
 };
 
+// import * as fs from 'node:fs';
+// function log(text) {
+  // fs.appendFile("log.txt", text, (err) => {});
+// }
+
 class Renderer extends EventEmitter {
   #buffer = "";
-  #width = "";
-  #height = "";
+  #width = 0;
+  #height = 0;
   #last_render = "";
   altscreen_state = AltScreenState.Inactive;
   #lines_rendered = 0;
@@ -492,18 +501,24 @@ class Renderer extends EventEmitter {
     let clear_sequence = new Array();
 
     if (this.#lines_rendered > 0) {
-      for (let i = 0; i < this.#lines_rendered; i++) {
+      for (let i = this.#lines_rendered; i > 0; i--) {
         clear_sequence.push(clear_line_seq());
         clear_sequence.push(cursor_up_seq(1));
       }
     }
+    // extra clear line to prevent phantom length lines
+        clear_sequence.push(clear_line_seq());
 
     let tmp = new_lines.join("\r\n");
+    // log(clear_sequence.join("") + tmp + "\r\n" + cursor_back_seq(100));
     print(clear_sequence.join("") + tmp + "\r\n");
     if (this.altscreen_state == AltScreenState.Active) {
       move_cursor(new_lines_this_flush, 0);
     } else {
+      // log("moved cursor")
       cursor_back(this.#width);
+      // cursor_back(100);
+      // console.log(cursor_back_seq(100))
     }
 
     this.#last_render = this.#buffer;
