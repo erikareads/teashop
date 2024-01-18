@@ -47,6 +47,9 @@ Teashop programs are composed of 3 parts:
 
 ### The Model
 
+First we create a type and constructor for our model. 
+This model will be responsible for holding all of the state we use throughout the app.
+
 ```gleam
 pub type Status {
   Selected
@@ -60,6 +63,11 @@ pub type Model {
 
 ### Initialization
 
+We need to define our `init` function. It returns the initial model, 
+and a command to perform any initial input or output.
+
+Here, I've specified the initial model as a constant:
+
 ```gleam
 const initial_model = Model(
   cursor: 0,
@@ -69,7 +77,12 @@ const initial_model = Model(
     #("Blueberry muffins 🫐", Unselected),
   ],
 )
+```
 
+Which we can use in the actual `init` function here. 
+Here, we use a command to set the window title to something appropriate for our app:
+
+```
 pub fn init(_) {
   #(initial_model, command.set_window_title("teashop"))
 }
