@@ -9,6 +9,7 @@ pub type InternalCommand(msg) {
   EnterAltScreen
   ClearScreen
   SetWindowTitle(String)
+  Seq(List(Command(msg)))
   SetTimer(msg, duration.Duration)
   ExecuteProcess(String, List(String))
   Custom(fn(fn(msg) -> Nil) -> Nil)
@@ -23,7 +24,7 @@ pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Command(msg) {
 }
 
 pub fn noop() {
-  []
+  Command(Noop)
 }
 
 pub fn quit() {
@@ -48,6 +49,10 @@ pub fn exit_alt_screen() {
 
 pub fn set_timer(msg: msg, duration: duration.Duration) -> Command(msg) {
   Command(SetTimer(msg, duration))
+}
+
+pub fn sequence(list: List(Command(msg))) -> Command(msg) {
+  Command(Seq(list))
 }
 
 pub fn set_window_title(title: String) -> Command(msg) {
