@@ -29,7 +29,6 @@ import {
   ExitAltScreen,
   ClearScreen,
   SetWindowTitle,
-  Seq,
   ExecuteProcess,
   SetTimer,
   Custom as CustomCommand,
@@ -837,15 +836,15 @@ export class App extends EventEmitter {
     }
   }
   #handleEvent(event) {
-    let [model, command] = this.#update(this.#model, event);
+    let [model, commands] = this.#update(this.#model, event);
     let updated_view = this.#view(model);
-    this.#handleNewCommand(command);
+    this.#handleNewCommands(commands);
     this.#renderer.render(updated_view);
     this.#model = model;
   }
 
-  #handleNewCommand(command) {
-    this.#commands.push(command)
+  #handleNewCommands(commands) {
+    this.#commands = this.#commands.concat(commands.toArray());
   }
 
   #setTimer(msg, duration) {
@@ -891,12 +890,6 @@ export class App extends EventEmitter {
       case command[0] instanceof SetWindowTitle:
         let title = command[0][0];
         set_window_title_seq(title);
-        break;
-      case command[0] instanceof Seq:
-        let cmds = command[0][0];
-        for (const cmd of cmds) {
-          this.#handleNewCommand(cmd);
-        }
         break;
       case command[0] instanceof CustomCommand:
         let effect = command[0][0];
