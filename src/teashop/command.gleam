@@ -23,7 +23,7 @@ pub fn from(effect: fn(fn(msg) -> Nil) -> Nil) -> Command(msg) {
   Command(Custom(fn(dispatch) { effect(dispatch) }))
 }
 
-pub fn noop() {
+pub fn none() {
   Command(Noop)
 }
 
