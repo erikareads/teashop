@@ -24,9 +24,7 @@ pub fn start(
   flags: flags,
 ) -> fn(Action(msg)) -> Nil
 
-// options: Options
 
-// pub fn start_with_options(app: App(model, msg, flags), flags: flags, options: Options(msg)) -> StartedApp
 pub fn send(dispatch: Dispatch(msg), msg: msg) {
   dispatch(Action(action.Send(msg)))
 }
