@@ -498,27 +498,11 @@ class Renderer extends EventEmitter {
   #flush() {
     let new_lines = this.#lines();
     let new_lines_this_flush = new_lines.length;
-    let clear_sequence = new Array();
 
-    if (this.#lines_rendered > 0) {
-      for (let i = this.#lines_rendered; i > 0; i--) {
-        clear_sequence.push(clear_line_seq());
-        clear_sequence.push(cursor_up_seq(1));
-      }
-    }
-    // extra clear line to prevent phantom length lines
-        clear_sequence.push(clear_line_seq());
-
-    let tmp = new_lines.join("\r\n");
-    // log(clear_sequence.join("") + tmp + "\r\n" + cursor_back_seq(100));
-    print(clear_sequence.join("") + tmp + "\r\n");
+    clear();
+    print(new_lines.join("\r\n"));
     if (this.altscreen_state == AltScreenState.Active) {
       move_cursor(new_lines_this_flush, 0);
-    } else {
-      // log("moved cursor")
-      cursor_back(this.#width);
-      // cursor_back(100);
-      // console.log(cursor_back_seq(100))
     }
 
     this.#last_render = this.#buffer;
